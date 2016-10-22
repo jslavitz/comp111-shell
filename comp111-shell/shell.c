@@ -1,26 +1,39 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 //test comment
 
+
+
+
+
+
+#define PROMPT "$> "
+/*
 void quitHandler(   );
 void interactive();
 void batch(char* name);
 void handleLine(char* line);
 void runInBackground(char*[] args);
+*/
+//interactive mode
+void interactive();
 
 int main(int argc, char* argv[]){
-	if(argc == 1)
+
+	if(argc == 1) {
+                printf("INTERACTIVE MODE\n");
 		interactive();
-	else if(argc == 2)
-		batch(argv[2]);
-	else
-		fprintf(stderr, "%s", "Too many files");
+        } else if(argc == 2) {
+                printf("BATCH MODE WITH FILE: %s\n", argv[1]);
+		//batch(argv[2]);
+        } else {
+		fprintf(stderr, "%s", "INVALID ARGUMENTS\nUSAGE: "
+                                "./shell [batchfile]\n");
+                exit(EXIT_FAILURE);
+        }
 }
-
-void quitHandler(   ){
-	exit(0);
-}
-
+/*
 void interactive(){
 	char* env = //();
 
@@ -29,6 +42,30 @@ void interactive(){
 		batch(getline());
 		printf("%s", "\n");
 	}
+}
+*/
+
+//https://www.gnu.org/software/libc/manual/html_node/Line-Input.html
+void interactive() 
+{
+        ssize_t bytes_read;
+        size_t len = 0;
+        char *buf = NULL; 
+
+        while (true) {
+                printf("%s", PROMPT);
+                //read from command prompt
+                bytes_read = getline(&buf, &len, stdin);             
+                printf("%s", "\n");
+                printf("%s", buf);
+                printf("%s", "\n");
+        }
+}
+
+
+/*
+void quitHandler(   ){
+	exit(0);
 }
 
 void batch(char* name){
@@ -54,10 +91,11 @@ void handleLine(char* line){
 		case "help": break;
 		case "pause": break;
 		case "quit": break;
-		default: /*run external program*/ break;
+		default: //run external program break;
 	}
 }
 
 void runInBackground(char*[] args){
 	//fork and call handleline()?
 }
+*/
