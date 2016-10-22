@@ -6,29 +6,35 @@
 
 //shell prompt
 #define PROMPT "$> "
-/*
-void quitHandler(   );
-void interactive();
-void batch(char* name);
-void handleLine(char* line);
+
+
+
+/* TODO...
 void runInBackground(char*[] args);
 */
+
+
 //interactive mode
 void interactive();
+
+//batch mode
+void batch(const char *fname);
 
 //handle line
 void handle_line(char *buf, ssize_t len);
 
-int main(int argc, char* argv[]){
 
+
+
+int main(int argc, char* argv[]){
 	if(argc == 1) {
                 printf("INTERACTIVE MODE\n");
 		interactive();
         } else if(argc == 2) {
                 printf("BATCH MODE WITH FILE: %s\n", argv[1]);
-		//batch(argv[2]);
+		batch(argv[1]);
         } else {
-		fprintf(stderr, "%s", "INVALID ARGUMENTS\nUSAGE: "
+		fprintf(stderr, "INVALID ARGUMENTS\nUSAGE: "
                                 "./shell [batchfile]\n");
                 exit(EXIT_FAILURE);
         }
@@ -36,7 +42,6 @@ int main(int argc, char* argv[]){
 
 
 
-//https://www.gnu.org/software/libc/manual/html_node/Line-Input.html
 /*
  * interactive mode
  * purpose: runs the command shell in interactive mode until 
@@ -53,15 +58,16 @@ void interactive()
         char *buf = NULL; 
 
         while (true) {
-                //check for EOF
+                //check for EOF (end of mode)
                 if (feof(stdin)) {
                         printf("\n");
-                        free(buf);
+                        if (buf != NULL) {
+                                free(buf);
+                        }
                         exit(EXIT_SUCCESS);
-                        //TODO
-                        //JUST CALL EXIT FUNCTION IMPLEMENTED LATER
-                        //with memory cleaned up
                 }
+
+                //prompt and process input
                 printf("%s", PROMPT);
                 bytes_read = getline(&buf, &len, stdin);             
                 handle_line(buf, bytes_read);
@@ -69,6 +75,55 @@ void interactive()
 }
 
 
+/*
+ * batch mode
+ *
+ * purpose: processes shell commands from a batch file
+ * arguments: file name of batch file
+ * returns: none 
+ *
+ * NOTE: function will not return (exits the 'shell' once the file
+ *       is processed)
+ */
+void batch(const char *fname) 
+{
+        ssize_t bytes_read;
+        size_t len = 0;
+        char *buf = NULL; 
+        FILE *fp;
+
+        //open file
+        fp = fopen(fname, "r"); 
+        if (fp == NULL) {
+                fprintf(stderr, "INVALID FILENAME\n");
+                exit(EXIT_FAILURE);
+        }
+
+        while (true) {
+                //check for EOF
+                if (feof(fp)) {
+                        if (buf != NULL) {
+                                free(buf);
+                        }
+                        fclose(fp);
+                        exit(EXIT_SUCCESS);
+                }
+                bytes_read = getline(&buf, &len, fp);             
+                handle_line(buf, bytes_read);
+        }
+}
+
+/*
+ *
+ * handle_line
+ *
+ * purpose: handles one 'line' of command line input
+ *
+ *
+ * TODO (actually run the input commands, check for invalid
+ *       ones and report appropriate errors)
+ * TODO remove the printf statements 
+ */
 void handle_line(char *buf, ssize_t len)
 {
         const char delim[2] = ";";
@@ -106,37 +161,6 @@ void handle_line(char *buf, ssize_t len)
 }
 
 /*
-void quitHandler(   ){
-	exit(0);
-}
-
-void batch(char* name){
-	char*[] lines = split (get(name, ";"));
-
-	int l = lenght(lines);
-	for(int i = 0; i < l; i++)
-		handle(lines[i]);
-}
-
-void handleLine(char* line){
-	char*[] args = split(line, " ");
-
-	if(args[length(args) - 1]  == "&")
-		runInBackground(args);
-
-	switch(args[0]){
-		case "cd": break;
-		case "clr": break;
-		case "dir": break;
-		case "environ": break;
-		case "echo":  break;
-		case "help": break;
-		case "pause": break;
-		case "quit": break;
-		default: //run external program break;
-	}
-}
-
 void runInBackground(char*[] args){
 	//fork and call handleline()?
 }
