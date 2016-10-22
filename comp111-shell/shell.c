@@ -8,6 +8,14 @@
 #define PROMPT "$> "
 
 
+/*
+ * THINGS LEFT TODO
+ * - run in background &
+ * - implement all native commands
+ * - keep track of environ somehow
+ * - I/O redirection
+ * - Error reporting
+ */
 
 /* TODO...
 void runInBackground(char*[] args);
