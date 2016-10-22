@@ -15,6 +15,7 @@
  * - keep track of environ somehow
  * - I/O redirection
  * - Error reporting
+ * - WAIT FOR RUNNING PROCESSES BEFORE EXIT
  */
 
 /* TODO...
@@ -32,6 +33,9 @@ void batch(const char *fname);
 void handle_line(char *buf, ssize_t len);
 
 
+//commands
+void clear();
+
 
 
 int main(int argc, char* argv[]){
@@ -47,7 +51,6 @@ int main(int argc, char* argv[]){
                 exit(EXIT_FAILURE);
         }
 }
-
 
 
 /*
@@ -146,7 +149,7 @@ void handle_line(char *buf, ssize_t len)
                 if (strncmp(token, "cd", 2) == 0) {
                         printf("%s\n", token);
                 } else if (strncmp(token, "clr", 3) == 0) {
-                        printf("clr\n");
+                        clear();
                 } else if (strncmp(token, "dir", 3) == 0) {
                         printf("dir\n");
                 } else if (strncmp(token, "environ", 7) == 0) {
@@ -168,6 +171,19 @@ void handle_line(char *buf, ssize_t len)
         }
 }
 
+
+
+
+/*
+ * clear
+ * purpose: clears the shell screen
+ *
+ * NOTE: this is an ansi escape sequences
+ */
+void clear()
+{
+        printf("\033c");
+}
 /*
 void runInBackground(char*[] args){
 	//fork and call handleline()?
