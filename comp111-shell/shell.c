@@ -16,6 +16,7 @@
  * - I/O redirection
  * - Error reporting
  * - WAIT FOR RUNNING PROCESSES BEFORE EXIT
+ * TODO FREE CWD/PATH ARRAY
  */
 
 /* TODO...
@@ -45,6 +46,7 @@ int main(int argc, char* argv[]){
                 fprintf(stderr, "Unable to get current directory\n");
                 exit(EXIT_FAILURE);
         }
+        printf("%s\n", cwd);
 
 	if(argc == 1) {
                 printf("INTERACTIVE MODE\n");
