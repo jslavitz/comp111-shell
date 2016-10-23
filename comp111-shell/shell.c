@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-
+#include <unistd.h>
 
 //shell prompt
 #define PROMPT "$> "
@@ -24,13 +24,13 @@ void runInBackground(char*[] args);
 
 
 //interactive mode
-void interactive();
+void interactive(char *path);
 
 //batch mode
-void batch(const char *fname);
+void batch(const char *fname, char *path);
 
 //handle line
-void handle_line(char *buf, ssize_t len);
+void handle_line(char *buf, ssize_t len, char *path);
 
 
 //commands
@@ -39,12 +39,19 @@ void clear();
 
 
 int main(int argc, char* argv[]){
+        char *cwd = malloc(256);
+
+        if (getcwd(cwd, 256) == NULL) {
+                fprintf(stderr, "Unable to get current directory\n");
+                exit(EXIT_FAILURE);
+        }
+
 	if(argc == 1) {
                 printf("INTERACTIVE MODE\n");
-		interactive();
+		interactive(cwd);
         } else if(argc == 2) {
                 printf("BATCH MODE WITH FILE: %s\n", argv[1]);
-		batch(argv[1]);
+		batch(argv[1], cwd);
         } else {
 		fprintf(stderr, "INVALID ARGUMENTS\nUSAGE: "
                                 "./shell [batchfile]\n");
@@ -62,7 +69,7 @@ int main(int argc, char* argv[]){
  *
  * NOTE: should not return (program will exit from this function)
  */
-void interactive() 
+void interactive(char *path)
 {
         ssize_t bytes_read;
         size_t len = 0;
@@ -81,7 +88,7 @@ void interactive()
                 //prompt and process input
                 printf("%s", PROMPT);
                 bytes_read = getline(&buf, &len, stdin);             
-                handle_line(buf, bytes_read);
+                handle_line(buf, bytes_read, path);
         }
 }
 
@@ -96,7 +103,7 @@ void interactive()
  * NOTE: function will not return (exits the 'shell' once the file
  *       is processed)
  */
-void batch(const char *fname) 
+void batch(const char *fname, char *path) 
 {
         ssize_t bytes_read;
         size_t len = 0;
@@ -120,7 +127,7 @@ void batch(const char *fname)
                         exit(EXIT_SUCCESS);
                 }
                 bytes_read = getline(&buf, &len, fp);             
-                handle_line(buf, bytes_read);
+                handle_line(buf, bytes_read, path);
         }
 }
 
@@ -135,7 +142,7 @@ void batch(const char *fname)
  *       ones and report appropriate errors)
  * TODO remove the printf statements 
  */
-void handle_line(char *buf, ssize_t len)
+void handle_line(char *buf, ssize_t len, char *path)
 {
         const char delim[2] = ";";
         char *token;
@@ -184,6 +191,9 @@ void clear()
 {
         printf("\033c");
 }
+
+
+
 /*
 void runInBackground(char*[] args){
 	//fork and call handleline()?
