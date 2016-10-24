@@ -12,62 +12,55 @@
 /*
  * THINGS LEFT TODO
  * - run in background &
- * - implement all native commands
- * - keep track of environ somehow
  * - I/O redirection
  * - Error reporting
- * - WAIT FOR RUNNING PROCESSES BEFORE EXIT
- * TODO FREE CWD/PATH ARRAY
+ * - WAIT FOR RUNNING PROCESSES BEFORE QUIT
  */
 
-/* TODO...
-void runInBackground(char*[] args);
-*/
 
+
+//validates command input
+bool check_command(char *input, char *cmd);
 
 //interactive mode
-void interactive(char *path);
+void interactive();
 
 //batch mode
-void batch(const char *fname, char *path);
+void batch(const char *fname);
 
 //handle line
-//returns the path we have navigated to
-char* handle_line(char *buf, ssize_t len, char *path);
-
+void handle_line(char *buf, ssize_t len);
 
 //commands
 void clear();
 
-char* change_directory(char* cur_path, char* buf, char* delim);
+//change directory
+void change_directory(char *input_path);
 
-void list_dir_contents(char* path);
+//list directory
+void list_dir_contents(char *input_path);
 
-void echo(char* buf, char* delim);
+//echo user's input
+void echo(char* buf);
 
 void run_exe(char* buf, char* delim);
 
+//prints environ strings
+void environ();
+
+//help manual
+void help();
 
 int main(int argc, char* argv[]){
-	char *cwd = malloc(256);
-
-	if (getcwd(cwd, 256) == NULL) {
-		fprintf(stderr, "Unable to get current directory\n");
-		exit(EXIT_FAILURE);
-	}
-	printf("%s\n", cwd);
-
 	if(argc == 1) {
-		printf("INTERACTIVE MODE\n");
-		interactive(cwd);
+		interactive();
 	} 
 	else if(argc == 2) {
-		printf("BATCH MODE WITH FILE: %s\n", argv[1]);
-		batch(argv[1], cwd);
+		batch(argv[1]);
 	} 
 	else {
 		fprintf(stderr, "INVALID ARGUMENTS\nUSAGE: "
-							"./shell [batchfile]\n");
+                                "./shell [batchfile]\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -82,7 +75,7 @@ int main(int argc, char* argv[]){
  *
  * NOTE: should not return (program will exit from this function)
  */
-void interactive(char *path)
+void interactive()
 {
 	ssize_t bytes_read;
 	size_t len = 0;
@@ -99,9 +92,9 @@ void interactive(char *path)
 		}
 
 		//prompt and process input
-		printf("%s %s", path, PROMPT);
+		printf("%s", PROMPT);
 		bytes_read = getline(&buf, &len, stdin);             
-		path = handle_line(buf, bytes_read, path);
+		handle_line(buf, bytes_read);
 	}
 }
 
@@ -116,7 +109,7 @@ void interactive(char *path)
  * NOTE: function will not return (exits the 'shell' once the file
  *       is processed)
  */
-void batch(const char *fname, char *path) 
+void batch(const char *fname) 
 {
 	ssize_t bytes_read;
 	size_t len = 0;
@@ -140,7 +133,7 @@ void batch(const char *fname, char *path)
 			exit(EXIT_SUCCESS);
 		}
 		bytes_read = getline(&buf, &len, fp);             
-		handle_line(buf, bytes_read, path);
+		handle_line(buf, bytes_read);
 	}
 }
 
@@ -150,58 +143,54 @@ void batch(const char *fname, char *path)
  *
  * purpose: handles one 'line' of command line input
  *
- *
- * TODO (actually run the input commands, check for invalid
- *       ones and report appropriate errors)
- * TODO remove the printf statements 
  */
-char* handle_line(char *buf, ssize_t len, char *path)
+void handle_line(char *buf, ssize_t len)
 {
 	const char delim[2] = ";";
 	char *token;
 
 	//get first 'token'
 	token = strtok(buf, delim);
-	 //if(args[length(args) - 1]  == "&") runInBackground(args);
 
 	while (token != NULL) {
 		//check command, if not in list then
 		//attempt to run as executable
-		if (strncmp(token, "cd", 2) == 0) {
-			return change_directory(path, buf, " \n");
+                if (check_command(token, "cd")) {
+			change_directory(token);
 		} 
-		else if (strncmp(token, "clr", 3) == 0) {
+		else if (check_command(token, "clr")) {
 			clear();
 		} 
-		else if (strncmp(token, "dir", 3) == 0) {
-			list_dir_contents(path);
+		else if (check_command(token, "dir")) {
+			list_dir_contents(token);
 		} 
-		else if (strncmp(token, "environ", 7) == 0) {
-			printf("environ\n");
+		else if (check_command(token, "environ")) {
+                        environ();
 		} 
-		else if (strncmp(token, "echo", 4) == 0) {
-			echo(buf, " \n");
-			return path;
+		else if (check_command(token, "echo")) {
+			echo(token);
 		} 
-		else if (strncmp(token, "help", 4) == 0) {
-			printf("help\n");
+		else if (check_command(token, "help")) {
+			help();
 		} 
-		else if (strncmp(token, "pause", 5) == 0) {
+		else if (check_command(token, "pause")) {
 			char* buf = NULL;
 			size_t len = 0;
 			ssize_t bytes_read = getline(&buf, &len, stdin); 
 			(void) bytes_read;
 		} 
-		else if (strncmp(token, "quit", 4) == 0) {
+		else if (check_command(token, "quit")) {
+                        //TODO WAIT FOR RUNNING CHILDREN
+                        if(buf != NULL) free(buf);
 			exit(EXIT_SUCCESS);
 		} 
 		else if (strncmp(token, ";", 1) != 0 &&
 			     strncmp(token, "\n", 1) != 0) {
-			run_exe(buf, " \n");
+                        printf("invalid command!\n");
+			//run_exe(buf, " \n");
 		}
 		token = strtok(NULL, delim);
 	}
-	return path;
 }
 
 
@@ -266,53 +255,130 @@ void run_exe(char* buf, char* delim)
 }
 
 
-void echo(char* buf, char* delim)
+//echos the text
+//text starts with "echo"
+void echo(char *buf)
 {
-	char* token = strtok(buf, delim);
-
-	while((token = strtok(NULL, delim)) != NULL){
-		printf("%s ", token);
-	}
-	printf("\n");
+        int i, len = strlen(buf);
+        for (i = 5; i < len; ++i) {
+                printf("%c", (char)buf[i]);
+        }
 }
 
 
-char* change_directory(char* cur_path, char* buf, char* delim)
+//attempts to change the shells directory
+void change_directory(char *input_path)
 {
-	char* token = strtok(buf, delim);
+        int len = strlen(input_path);
+        int i;
+        char *path;
+        path = getenv("PWD");
 
-	token = strtok(NULL, delim);
-	char* new_dir = malloc(sizeof(char) * 255);
-	strcpy(new_dir, cur_path);
-	strcat(new_dir, "/");
-	strcat(new_dir, token);
 
-	DIR* dir;
+        //either print current directory or change
+        if ((len < 3) || (input_path[2] == 10)) {
+                if (path != NULL) printf("%s\n", path);  
+        } else {
+                //skip over whitespace 
+                i = 2; 
+                while (i < len && input_path[i] == ' ') ++i;
+                if (input_path[i] == 10) {
+                        if (path != NULL) printf("%s\n", path);  
+                } else {
+                        //make new string holding desired environment
+                        path = malloc(sizeof(char) * len);
+                        int j = 0;
+                        for ( ; i < len && input_path[i] != 10 
+                                        && input_path[i] != '\0'; ++i) {
+                                path[j] = input_path[i];
+                                j++;
+                        }
+                        path[i] = '\0';
 
-	if((dir = opendir(new_dir)) != NULL){
-		closedir(dir);
-	}
-	else{
-		perror("");
-	}
-	
-	return new_dir;
+                        DIR *dir;
+                        //attempt to set new pwd
+                        if ((dir = opendir(path)) != NULL) {
+                                closedir(dir);
+                                setenv("PWD", path, 1);
+                        } else {
+                                perror("");
+                        }
+                        if (path != NULL) free(path);
+                }
+        }
 }
 
-void list_dir_contents(char* path)
-{
-	DIR* dir;
-	struct dirent* ent;
 
-	if((dir = opendir(path)) != NULL){
-		while((ent = readdir (dir)) != NULL){
+//checks to see if the user's input matches
+//an actual command
+bool check_command(char *input, char *cmd)
+{
+        int input_len = (int)strlen(input);
+        int cmd_len = (int)strlen(cmd);
+
+        if (input_len < cmd_len) {
+                return false;
+        }
+
+        if (strncmp(input, cmd, cmd_len) == 0) {
+                if (input_len == cmd_len) {
+                        return true;
+                }
+                if (cmd_len + 1 <= input_len) {
+                        if (input[cmd_len] == ' ') return true;
+                        if (input[cmd_len] == '\r') return true;
+                        if (input[cmd_len] == 10) return true; //line feed
+                } else {
+                        return false;
+                }
+        }
+        return false;
+}
+
+
+//lists the dir contents of a 
+//directory name pointed to by path
+void list_dir_contents(char *path)
+{
+	DIR *dir;
+	struct dirent *ent;
+        int len = strlen(path);
+        char *dir_name;
+        int i;
+
+        //get directory name
+        if ((len < 4) || (path[3] == 10)) {
+                dir_name = getenv("PWD");
+        } else {
+                //skip over whitespace 
+                i = 3; 
+                while (i < len && path[i] == ' ') ++i;
+                if (path[i] == 10) {
+                        dir_name = getenv("PWD");
+                } else {
+                        //make new string holding desired directory
+                        dir_name = malloc(sizeof(char) * len);
+                        int j = 0;
+                        for ( ; i < len && path[i] != 10 
+                                        && path[i] != '\0'; ++i) {
+                                dir_name[j] = path[i];
+                                j++;
+                        }
+                        dir_name[i] = '\0';
+                }
+        }
+
+        //now list the contents
+	if ((dir = opendir(dir_name)) != NULL) {
+		while((ent = readdir (dir)) != NULL) {
 			printf("%s\n", ent->d_name);
 		}
 		closedir(dir);
-	}
-	else{
+                if (dir_name != getenv("PWD") && dir_name != NULL)
+                        free(dir_name);
+	} else {
 		perror("Could not open directory");
-	}
+        }
 }
 
 /*
@@ -324,4 +390,30 @@ void list_dir_contents(char* path)
 void clear()
 {
 	printf("\033c");
+}
+
+
+//prints environment strings
+void environ()
+{
+        char *pwd = getenv("PWD");
+        if (pwd != NULL) {
+                printf("parent=%s/shell\n", pwd);
+        } else {
+                fprintf(stderr, "ERROR GETTING ENV\n");
+        }
+}
+
+
+//shows the user's help manual
+void help()
+{
+        clear();
+        printf("COMP 111 BASIC SHELL MANUAL\nInstructions:\ncd <directory>"
+               " - change working directory to <directory>. If <directory> is not"
+               " present, prints working directory\nclr - clears the screen\n"
+               "dir <directory> - list contents of <directory>\nenviron - list"
+               "all the environ strings\necho <comment> - display comment on stdout"
+               "help - display this manual\nquit - quit the shell\n");
+
 }
