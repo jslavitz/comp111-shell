@@ -416,7 +416,7 @@ void help()
                " - change working directory to <directory>. If <directory> is not"
                " present, prints working directory\nclr - clears the screen\n"
                "dir <directory> - list contents of <directory>\nenviron - list"
-               "all the environ strings\necho <comment> - display comment on stdout"
+               "all the environ strings\necho <comment> - display comment on stdout\n"
                "help - display this manual\nquit - quit the shell\n");
 }
 
