@@ -189,8 +189,7 @@ void handle_line(char *buf, ssize_t len)
 		} 
 		else if (strncmp(token, ";", 1) != 0 &&
 			     strncmp(token, "\n", 1) != 0) {
-                        printf("invalid command!\n");
-			//run_exe(buf, " \n");
+			run_exe(token, " \n");
 		}
 		token = strtok(NULL, delim);
 	}
@@ -199,9 +198,11 @@ void handle_line(char *buf, ssize_t len)
 
 void run_exe(char* buf, char* delim)
 {
-	char* token = malloc(sizeof(char) * 255);
+	char* token = malloc(sizeof(char) * strlen(buf));
 	strcpy(token, buf);
-	char* lengthstr = strtok (buf, delim);
+	char* bufdup = malloc(sizeof(char) * strlen(buf));
+	strcpy(bufdup, buf);
+	char* lengthstr = strtok (bufdup, delim);
 	int length = 0;
 
 	while ((lengthstr = strtok (NULL, delim)) != NULL){
@@ -243,18 +244,24 @@ void run_exe(char* buf, char* delim)
     char* s = (char *) 0;
 
     //for some reason without this line we get exec bad acess????
-    printf("");
 
-    if ( pid == 0 ) {
-        int e = execve( argv[0], argv, &s);
+    if (pid < 0) {
+    	exit(EXIT_FAILURE);
+    } else if ( pid == 0 ) {
+        execve( argv[0], argv, &s);
+        fprintf(stderr, "invalid command\n");
+        exit(EXIT_FAILURE);
+    } else {
+    	int status;
+   		waitpid(pid, &status, 0);
     
+   	/*
         if(e == -1)
             perror("execve error");
-        printf("Executed%i\n", e);
+        printf("Executed%i\n", e);*/
     }
-
-    waitpid(pid, NULL, 0);
-    free(token);
+    printf("done w/command\n");
+    if (token != NULL) free(token);
 }
 
 
@@ -263,8 +270,18 @@ void run_exe(char* buf, char* delim)
 void echo(char *buf)
 {
         int i, len = strlen(buf);
+
+        bool hasSpaced = false;
         for (i = 5; i < len; ++i) {
-                printf("%c", (char)buf[i]);
+                if(!hasSpaced && (char) buf[i] == ' '){
+                	printf(" ");
+                	hasSpaced = true;
+                }
+                else if ((char) buf[i] != ' '){
+                	hasSpaced = false;
+			    	printf("%c", (char)buf[i]);
+			    }
+
         }
 }
 
@@ -274,8 +291,9 @@ void change_directory(char *input_path)
 {
         int len = strlen(input_path);
         int i;
-        char *path;
+        char *path, *new_path;
         path = getenv("PWD");
+        int path_length;
 
 
         //either print current directory or change
@@ -289,24 +307,23 @@ void change_directory(char *input_path)
                         if (path != NULL) printf("%s\n", path);  
                 } else {
                         //make new string holding desired environment
-                        path = malloc(sizeof(char) * len);
-                        int j = 0;
-                        for ( ; i < len && input_path[i] != 10 
-                                        && input_path[i] != '\0'; ++i) {
-                                path[j] = input_path[i];
-                                j++;
-                        }
-                        path[i] = '\0';
-
+                        path_length = strlen(path);
+                        new_path = malloc(sizeof(char) * (1 + len + path_length));
+                        strcpy(new_path, path);
+                        strcat(new_path, "/");
+                        char *token = strtok(input_path, " \n");
+                        token = strtok(NULL, " \n");
+                        strcat(new_path, token);
+                       
                         DIR *dir;
                         //attempt to set new pwd
-                        if ((dir = opendir(path)) != NULL) {
+                        if ((dir = opendir(new_path)) != NULL) {
                                 closedir(dir);
-                                setenv("PWD", path, 1);
+                                setenv("PWD", new_path, 1);
                         } else {
                                 perror("");
                         }
-                        if (path != NULL) free(path);
+                        if (path != NULL) free(new_path);
                 }
         }
 }
