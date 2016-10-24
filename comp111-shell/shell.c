@@ -17,16 +17,17 @@
  * - WAIT FOR RUNNING PROCESSES BEFORE QUIT
  */
 
+//shell prompt
+#define PROMPT "$> "
 
 
 //validates command input
 bool check_command(char *input, char *cmd);
 
-//interactive mode
-void interactive();
-
 //batch mode
 void batch(const char *fname);
+
+void interactive();
 
 //handle line
 void handle_line(char *buf, ssize_t len);
@@ -51,14 +52,16 @@ void environ();
 //help manual
 void help();
 
+
+
+
 int main(int argc, char* argv[]){
-	if(argc == 1) {
+
+	if (argc == 1) {
 		interactive();
-	} 
-	else if(argc == 2) {
+	} else if(argc == 2) {
 		batch(argv[1]);
-	} 
-	else {
+	} else {
 		fprintf(stderr, "INVALID ARGUMENTS\nUSAGE: "
                                 "./shell [batchfile]\n");
 		exit(EXIT_FAILURE);
@@ -415,5 +418,6 @@ void help()
                "dir <directory> - list contents of <directory>\nenviron - list"
                "all the environ strings\necho <comment> - display comment on stdout"
                "help - display this manual\nquit - quit the shell\n");
-
 }
+
+
